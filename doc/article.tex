@@ -1,0 +1,108 @@
+\documentclass[11pt,a4paper]{scrartcl}
+\usepackage[utf8x]{inputenc}
+\usepackage{ucs}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{tabularx}
+\usepackage{listing}
+\usepackage{xfrac}
+\usepackage[bookmarks=true,unicode=true]{hyperref}
+
+\hypersetup{pdftitle={},pdfauthor={Alexander Weigl}}
+
+\author{Alexander Weigl\\ \texttt{weigla@fh-trier.de}}
+\title{Visualisierung des Vertrauens in OpenPGP Keyserver}
+
+\begin{document}
+\maketitle
+
+\section{Motiviation}
+
+PGP verwendet konträr zu S/MIME (X.509) ein dezenetrales Modell.
+Dabei können die Anwender selbst Schlüssel erzeugen und 
+gegenseitig die Identität begläubigen. Identität ist hierbei die Zuordnung
+zwischem dem Namen und E-Mail-Adresse (bzw. der Fingerprint) zur eigentlichen Person.
+Vertrauen kann dann auch zu einem Schlüssel abgeleitet werden, ohne das man diesen direkt sein Vertrauen ausgestellt hat. Dieses indirekte Vertrauen über ein starkes Vertrauen in einen Schlüssel der mittelbar auch diesen Schlüssel beglaubigt hat.
+Die dabei enstehenden Verflechtungen des Vertrauens versucht diese Software darzustellen. 
+Bei der Suche nach entsprechender stößt man auf ein Perl-Script \texttt{sig2dot.pl}. 
+Dieses verwendet \texttt{gpg} um die Schlüsselinformationen auszulesen.
+Ich habe bei der Implementierung einen anderen Ansatz verwendet.
+
+\section{Umsetzung}
+Die Software greift die Informationen direkt von der Weboberfläche der Keyserver ab.
+Dabei gibt der Schlüsselserver Informationen über die Beglaubigungen der Schlüssel aus.
+
+Zum Beispiel erhält man über:
+
+\begin{center}
+	\url{http://keyserver.ubuntu.com:11371/pks/lookup?op=vindex&search=0x5822CFFFDD05EBE1}
+\end{center}
+
+die Informationen zum Schlüssel mit der ID 0x5822CFFFDD05EBE1.
+Die HTML-Antwort wird mittels eines HTML-Parsers\footnote{Jericho HTML \url{http://jericho.htmlparser.net/}} in einen einfach zu parsenen Zeichenkette überführt (Listing \ref{lst:reply}).
+Aus dieser wird nun die Schlüssel-ID und Namen des Schlüssel und Inhaber extrahiert.
+Diese stehen an einer festen Position. Ich suche nach der Zeile die mit \texttt{pub} beginnt und kann dann 
+über den Regulären Ausdruck \v+'0x[A-F0-9]{16}'+ und finde die Schlüssel-ID. Der Name steht schließlich zwei Zeilen unterhalb. Für die Beglaubigungen wird nun jede zweite Zeile angefasst. Über den bisherigen Regulären Ausdruck wird die ID gefunden. Der Schlüsselinhaber steht an fixer Position und kann über ein Substring gefunden werden. Entscheidend für die Identität des Knoten im Graphen ist lediglich die Schlüssel-IDs. Mit diesen IDs beginnt geht der Algorithmus in die Rekursion. 
+Um den Durchsatz zu erhöhen und der Netzwerklatenz wird jede Abfrage in einen neuen Thread.
+Die gefundenen Vertrauensbeziehungen werden in einen Graphen eingetragen und anschließend dargestellt\footnote{Junga: \url{http://jung.ics.uci.edu}}.
+
+\lstset{language=}
+\lstset{postbreak=\space, breakindent=5pt, breaklines}
+
+\begin{lstlisting}[basicstyle={\footnotesize},frame=tbLR,numbers=left,showspaces=true,float=tb,caption={Anwort auf eine Schlüsselanfrage für \texttt{0x0FA9E9F0CC4E48FF}},label=lst:reply,linewidth=\textwidth,]
+Search results for '0x0fa9e9f0cc4e48ff'
+
+Type bits/keyID    cr. time   exp time   key expir
+
+------------------------------------------------------------------------
+
+pub  2048R/CC4E48FF </pks/lookup?op=get&search=0x0FA9E9F0CC4E48FF> 2011-05-04            
+
+uid Konstantin Knorr <knorr@fh-trier.de>
+sig  sig3  CC4E48FF </pks/lookup?op=get&search=0x0FA9E9F0CC4E48FF> 2011-05-04 __________ __________ [selfsig]
+</pks/lookup?op=vindex&search=0x0FA9E9F0CC4E48FF>
+sig  sig   D2B663EA </pks/lookup?op=get&search=0xD0F0EFD5D2B663EA> 2011-05-12 __________ __________ Martin Kock <kockm@fh-trier.de>
+</pks/lookup?op=vindex&search=0xD0F0EFD5D2B663EA>
+sig  sig   36966483 </pks/lookup?op=get&search=0x245BC47136966483> 2011-05-24 __________ __________ []
+</pks/lookup?op=vindex&search=0x245BC47136966483>
+sig  sig   3F6B99B7 </pks/lookup?op=get&search=0x7A748C393F6B99B7> 2011-05-31 __________ __________ David Weich <weichd@fh-trier.de>
+</pks/lookup?op=vindex&search=0x7A748C393F6B99B7>
+sig  sig   F9F4BF1B </pks/lookup?op=get&search=0xB076662EF9F4BF1B> 2011-05-31 __________ __________ Alexander Weigl <weigla@fh-trier.de>
+</pks/lookup?op=vindex&search=0xB076662EF9F4BF1B>
+
+sub  2048R/7031D914 2011-05-04            
+sig sbind  CC4E48FF </pks/lookup?op=get&search=0x0FA9E9F0CC4E48FF> 2011-05-04 __________ __________ []
+</pks/lookup?op=vindex&search=0x0FA9E9F0CC4E48FF>
+\end{lstlisting}
+
+
+\section{Programmvorstellung}
+Die Hauptfunktionalität befindet sich im Menü unter \texttt{File -> Fetch Data$\ldots$} worauf sich hin der Dialog aus Abbildung \ref{fig:fetchdialog} öffnet. In diesen kann man die Startschlüssel, Rekursionstiefe und den Keyserver einstellen. Auf [Fetch] beginnt nun der Prozess des Datenabgreifens.
+
+\emph{Den kann man mit der Maustaste translatieren, sowie mit dem Modifier STRG rotieren oder ALT scheren.}
+
+\begin{figure}
+\centering
+\includegraphics[scale=0.5]{images/fetchdialog.png}
+\caption{Optionen zum Abgreifen der Schlüsselinformationen}
+\label{fig:fetchdialog}
+\end{figure}
+
+In Abbildung \ref{fig:examplegraph} befindet sich ein Beispiel eines Graphes, der durch den Schlüssel vom Konstantin Knorr und Tim Wambach aufgespannt wurde.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.8\textwidth]{images/example-graph.png}
+\caption{Beispiel eines Graphes als Startschlüssel diente die Schlüssel vom Konstantin Knorr und Tim Wambach}
+\label{fig:examplegraph}
+\end{figure}
+
+\section{Fazit}
+
+Der Keyserver als Informationsquelle zeichnet sich als einfacher Zugang zu den Beglaubigungen aus.
+Leider gibt es so keine Möglichkeit an das Niveau des Vertrauens zu erreichen. Somit kann kein differenziertes Vertrauensgeflecht aufgebaut. Aber für einen Überblick über die Strukturen und Vernetzungen der Schlüssel ist die erzielte Visualisierung ausreichend.
+
+\end{document}
