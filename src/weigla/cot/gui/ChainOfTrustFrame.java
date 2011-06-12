@@ -2,7 +2,10 @@ package weigla.cot.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.beans.XMLDecoder;
 import java.beans.XMLEncoder;
 import java.io.File;
@@ -14,7 +17,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import javax.swing.JDialog;
-import javax.swing.JEditorPane;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -24,33 +26,40 @@ import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.text.html.HTMLEditorKit;
 
-import org.apache.commons.collections15.functors.ChainedClosure;
-
+import weigla.cot.extract.Person;
+import weigla.cot.extract.Retriever;
+import weigla.cot.extract.Trust;
 import edu.uci.ics.jung.algorithms.layout.CircleLayout;
-import edu.uci.ics.jung.graph.DirectedSparseGraph;
 import edu.uci.ics.jung.graph.Graph;
 import edu.uci.ics.jung.visualization.VisualizationViewer;
 import edu.uci.ics.jung.visualization.control.DefaultModalGraphMouse;
 import edu.uci.ics.jung.visualization.control.ModalGraphMouse.Mode;
 import edu.uci.ics.jung.visualization.decorators.ToStringLabeller;
 
-import weigla.cot.extract.Person;
-import weigla.cot.extract.Retriever;
-import weigla.cot.extract.Trust;
-
 public class ChainOfTrustFrame extends JFrame {
-
-    WAction actionHelp = new HelpAction();
-    WAction actionOpen = new OpenAction();
-    WAction actionSave = new SaveAction();
-    WAction actionFetch = new FetchAction();
-    WAction actionClose = new CloseAction();
+    private static final long serialVersionUID = -1028248650428117778L;
+    private WAction actionHelp = new HelpAction();
+    private WAction actionOpen = new OpenAction();
+    private WAction actionSave = new SaveAction();
+    private WAction actionFetch = new FetchAction();
+    private WAction actionClose = new CloseAction();
 
     public ChainOfTrustFrame() {
 	setDefaultCloseOperation(EXIT_ON_CLOSE);
 	setSize(500, 500);
 	setJMenuBar(createMenubar());
 	setLayout(new BorderLayout());
+
+	addWindowListener(new WindowAdapter() {
+	    @Override
+	    public void windowClosed(WindowEvent e) {
+		System.exit(0);
+	    }
+	});
+	
+	Dimension d = Toolkit.getDefaultToolkit().getScreenSize();
+	setLocation((d.width - getWidth()) / 2,
+		      (d.height- getHeight()) / 2);
     }
 
     private void updateView() {
@@ -73,6 +82,7 @@ public class ChainOfTrustFrame extends JFrame {
 		});
 
 	add(vv);
+	invalidate();
 	repaint();
     }
 
@@ -93,6 +103,11 @@ public class ChainOfTrustFrame extends JFrame {
     }
 
     class CloseAction extends WAction {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1349113638630488289L;
+
 	public CloseAction() {
 	    setText("Close");
 	}
@@ -100,10 +115,16 @@ public class ChainOfTrustFrame extends JFrame {
 	@Override
 	public void actionPerformed(ActionEvent e) {
 	    ChainOfTrustFrame.this.setVisible(false);
+	    System.exit(0);
 	}
     }
 
     class SaveAction extends WAction {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -6208574755189966577L;
+
 	public SaveAction() {
 	    setText("Save Graph");
 	}
@@ -128,6 +149,11 @@ public class ChainOfTrustFrame extends JFrame {
     public Graph<Person, Trust> currentGraph;
 
     class OpenAction extends WAction {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 7962537893103714980L;
+
 	public OpenAction() {
 	    setText("Open…");
 	}
@@ -151,6 +177,11 @@ public class ChainOfTrustFrame extends JFrame {
     }
 
     class FetchAction extends WAction {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -1890696055889533757L;
+
 	public FetchAction() {
 	    setText("Fetch Data…");
 	}
@@ -160,6 +191,10 @@ public class ChainOfTrustFrame extends JFrame {
 	    FetchDialog dialog = new FetchDialog(ChainOfTrustFrame.this);
 	    dialog.setVisible(true);
 
+	    if (!dialog.getAccepted())
+		return;
+
+	    
 	    FetchProgressDialog dialog2 = new FetchProgressDialog(
 		    ChainOfTrustFrame.this);
 
@@ -193,6 +228,11 @@ public class ChainOfTrustFrame extends JFrame {
     }
 
     class HelpAction extends WAction {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -54785792821812646L;
+
 	public HelpAction() {
 	    setText("Help");
 	    setAccelerator(KeyStroke.getKeyStroke("f1"));

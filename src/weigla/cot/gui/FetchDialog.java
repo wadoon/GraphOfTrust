@@ -1,5 +1,7 @@
 package weigla.cot.gui;
 
+import java.awt.Container;
+import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -16,6 +18,7 @@ public class FetchDialog extends JDialog implements ActionListener {
     private JTextArea txtKeys;
     private JTextField txtKeyserver;
     private JButton btnOk = new JButton("Fetch!");
+    private JButton btnCancel = new JButton("Abort");
 
     private boolean accepted = false;
 
@@ -26,6 +29,8 @@ public class FetchDialog extends JDialog implements ActionListener {
 	setSize(500, 500);
 	setResizable(false);
 	init();
+	Dimension d = owner.getSize();
+	setLocation(owner.getX() + (d.width - getWidth()) / 2, owner.getY());
     }
 
     private void init() {
@@ -41,6 +46,7 @@ public class FetchDialog extends JDialog implements ActionListener {
 	sliRecur.setMaximum(1000);
 
 	btnOk.addActionListener(this);
+	btnCancel.addActionListener(this);
 
 	setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 	setLayout(new javax.swing.BoxLayout(getContentPane(),
@@ -63,7 +69,11 @@ public class FetchDialog extends JDialog implements ActionListener {
 	add(txtKeyserver);
 
 	add(new JSeparator());
-	add(btnOk);
+
+	JPanel p = new JPanel();
+	p.add(btnCancel);
+	p.add(btnOk);
+	add(p);
 
 	txtKeys.setText("0x0FA9E9F0CC4E48FF");
 	txtKeyserver.setText("keyserver.ubuntu.com:11371");
@@ -75,7 +85,8 @@ public class FetchDialog extends JDialog implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
 	setVisible(false);
-	accepted = true;
+	if (e.getSource() == btnOk)
+	    accepted = true;
     }
 
     public boolean getAccepted() {

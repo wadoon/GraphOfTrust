@@ -1,10 +1,13 @@
 package weigla.cot.gui;
 
 import java.util.HashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-import javax.swing.*;
+import javax.swing.BoxLayout;
+import javax.swing.DefaultListModel;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JList;
 
 public class FetchProgressDialog extends JDialog {
     private static final long serialVersionUID = -219784938169337542L;
